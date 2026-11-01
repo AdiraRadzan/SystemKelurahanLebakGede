@@ -202,16 +202,10 @@ export const ROLE_NAVIGATION: Record<UserRole, MenuGroup[]> = {
       groupName: 'DATA PENGURUS',
       items: [
         {
-          title: 'Data Pengurus RW',
-          href: '/pemerintahan/pengurus-rw',
+          title: 'Data Pengurus RW & RT',
+          href: '/pemerintahan/pengurus',
           iconName: 'Building',
-          description: 'Daftar kepengurusan 5 Rukun Warga (RW 01 - RW 05)',
-        },
-        {
-          title: 'Data Pengurus RT',
-          href: '/pemerintahan/pengurus-rt',
-          iconName: 'Contact',
-          description: 'Daftar Ketua dan Pengurus RT se-Kelurahan Lebakgede',
+          description: 'Satu tabel pengurus per RW — Ketua/Sekretaris/Bendahara RW dan RT',
         },
       ],
     },

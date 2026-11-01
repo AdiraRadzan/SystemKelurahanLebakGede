@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { COOKIE_NAME, verifySession } from '@/lib/auth';
 import { getModuleConfig } from '@/config/modules';
+import { RW_OPTIONS } from '@/config/modules';
 import { ModuleView } from '@/components/modules/module-view';
 import { TabelView } from '@/components/tabel/tabel-view';
 import { PENDUDUK_API_CONFIGURED, listTable } from '@/lib/sheets';
@@ -18,8 +19,7 @@ interface ModulePageProps {
 // ============================================================================
 const SHEETS_MODULES: Record<string, Record<string, string>> = {
   pemerintahan: {
-    'pengurus-rw': 'pengurus',
-    'pengurus-rt': 'pengurus',
+    pengurus: 'pengurus',
     trantibum: 'kejadian',
     'penduduk-sementara': 'pendudukSementara',
     'perubahan-penduduk': 'perubahanPenduduk',
@@ -28,6 +28,12 @@ const SHEETS_MODULES: Record<string, Record<string, string>> = {
     infrastruktur: 'proyek',
     'fasilitas-sarpras': 'fasilitas',
   },
+};
+
+// Modul dengan tampilan berkelompok (bukan tabel datar).
+// Pengurus digabung jadi satu menu, dikelompokkan per RW.
+const GROUPED_MODULES: Record<string, { groupBy: string; groupLabel: string }> = {
+  pengurus: { groupBy: 'Wilayah', groupLabel: 'RW' },
 };
 
 export default async function ModulePage({ params }: ModulePageProps) {
@@ -44,6 +50,11 @@ export default async function ModulePage({ params }: ModulePageProps) {
 
   if (session.role !== role) {
     redirect('/akses-ditolak');
+  }
+
+  // Menu lama "Data Pengurus RW" dan "Data Pengurus RT" kini digabung.
+  if (moduleSlug === 'pengurus-rw' || moduleSlug === 'pengurus-rt') {
+    redirect(`/${role}/pengurus`);
   }
 
   const config = getModuleConfig(role, moduleSlug);
@@ -69,15 +80,7 @@ export default async function ModulePage({ params }: ModulePageProps) {
       }
     }
 
-    // Modul RW dan RT berbagi satu sheet `pengurus`; saring sesuai jabatan.
-    if (moduleSlug === 'pengurus-rw') {
-      rows = rows.filter((r) => String(r.Jabatan ?? '').includes('Rukun Warga'));
-    } else if (moduleSlug === 'pengurus-rt') {
-      rows = rows.filter((r) => String(r.Jabatan ?? '').includes('Rukun Tetangga'));
-    }
-
-    // Kolom internal yang tidak perlu ditampilkan di form.
-    const hidden = moduleSlug.startsWith('pengurus') ? ['Wilayah'] : [];
+    const grouped = GROUPED_MODULES[moduleSlug];
 
     return (
       <TabelView
@@ -86,7 +89,9 @@ export default async function ModulePage({ params }: ModulePageProps) {
         role={role}
         initialItems={rows}
         initialError={error}
-        hidden={hidden}
+        groupBy={grouped?.groupBy}
+        groupLabel={grouped?.groupLabel}
+        groupOptions={grouped ? RW_OPTIONS : undefined}
       />
     );
   }

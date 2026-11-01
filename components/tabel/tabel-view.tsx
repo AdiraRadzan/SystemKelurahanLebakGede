@@ -10,12 +10,28 @@ import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast';
 import { ModuleConfig, TableColumn, FormField } from '@/types/module';
-import { Home, ChevronRight, Plus, Loader2, RefreshCw, AlertTriangle, Database } from 'lucide-react';
+import {
+  Home,
+  ChevronRight,
+  Plus,
+  Loader2,
+  RefreshCw,
+  AlertTriangle,
+  Database,
+  Search,
+  Eye,
+  Pencil,
+  Trash2,
+  Users,
+} from 'lucide-react';
 
 // ============================================================================
 // TabelView — tabel CRUD generik yang sumbernya Google Sheets.
-// Dipakai modul: Pengurus RW/RT (MODEL B), Proyek (MODEL C), Kejadian (MODEL D),
-// Penduduk Sementara, Perubahan Penduduk, Fasilitas.
+// Dipakai modul: Pengurus RW & RT (MODEL B), Proyek (MODEL C), Kejadian
+// (MODEL D), Penduduk Sementara, Perubahan Penduduk, Fasilitas.
+//
+// Bila `groupBy` diisi (mis. 'Wilayah'), data ditampilkan sebagai beberapa
+// tabel terpisah per kelompok — satu kartu per RW, berisi anggotanya.
 // ============================================================================
 
 export interface TabelViewProps {
@@ -25,8 +41,14 @@ export interface TabelViewProps {
   role: string;
   initialItems?: Record<string, unknown>[];
   initialError?: string | null;
-  /** Sembunyikan kolom ID dari tabel & form. */
+  /** Sembunyikan kolom dari tabel & form. */
   hidden?: string[];
+  /** Nama kolom untuk pengelompokan (mis. 'Wilayah'). Kosong = tabel biasa. */
+  groupBy?: string;
+  /** Label kartu kelompok (mis. 'RW'). */
+  groupLabel?: string;
+  /** Urutan kelompok yang diinginkan (mis. RW_OPTIONS). */
+  groupOptions?: { label: string; value: string }[];
 }
 
 function buildFields(config: ModuleConfig, hidden: string[]): FormField[] {
@@ -40,10 +62,15 @@ export function TabelView({
   initialItems = [],
   initialError = null,
   hidden = [],
+  groupBy,
+  groupLabel = 'Kelompok',
+  groupOptions,
 }: TabelViewProps) {
   const [items, setItems] = useState<Record<string, unknown>[]>(initialItems);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(initialError);
+  const [search, setSearch] = useState('');
+  const [groupFilter, setGroupFilter] = useState('');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Record<string, unknown> | null>(null);
@@ -74,6 +101,8 @@ export function TabelView({
     fields.forEach((f) => {
       if (f.defaultValue !== undefined) seed[f.name] = String(f.defaultValue);
     });
+    // Saat sedang memfilter satu RW, anggota baru otomatis masuk RW itu.
+    if (groupBy && groupFilter) seed[groupBy] = groupFilter;
     setFormValues(seed);
     setEditingItem(null);
     setFormError(null);
@@ -156,6 +185,79 @@ export function TabelView({
       ''
   );
 
+  // --- Pengelompokan (mis. per RW) -------------------------------------------
+  const filtered = useMemo(() => {
+    let rows = items;
+    if (groupBy && groupFilter) {
+      rows = rows.filter((r) => String(r[groupBy] ?? '').trim() === groupFilter);
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter((r) =>
+        Object.values(r).some((v) => String(v ?? '').toLowerCase().includes(q))
+      );
+    }
+    return rows;
+  }, [items, groupBy, groupFilter, search]);
+
+  const groups = useMemo<[string, Record<string, unknown>[]][]>(() => {
+    if (!groupBy) return [];
+    const map = new Map<string, Record<string, unknown>[]>();
+    filtered.forEach((row) => {
+      const key = String(row[groupBy] ?? '').trim() || '(belum diisi)';
+      const list = map.get(key);
+      if (list) list.push(row);
+      else map.set(key, [row]);
+    });
+
+    const order = groupOptions?.map((o) => o.value) ?? [];
+    return Array.from(map.entries()).sort((a, b) => {
+      const ia = order.indexOf(a[0]);
+      const ib = order.indexOf(b[0]);
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return a[0].localeCompare(b[0], 'id', { numeric: true });
+    });
+  }, [filtered, groupBy, groupOptions]);
+
+  // Daftar pilihan filter: gabungan opsi baku + nilai yang benar-benar ada.
+  const groupChoices = useMemo(() => {
+    if (!groupBy) return [];
+    const found = new Set(items.map((r) => String(r[groupBy] ?? '').trim()).filter(Boolean));
+    const base = (groupOptions ?? []).map((o) => o.value);
+    const extras = Array.from(found).filter((v) => !base.includes(v));
+    return [...base, ...extras.sort((a, b) => a.localeCompare(b, 'id', { numeric: true }))];
+  }, [items, groupBy, groupOptions]);
+
+  const groupColumns = useMemo(
+    () => (config.columns as TableColumn[]).filter((c) => c.key !== groupBy),
+    [config.columns, groupBy]
+  );
+
+  const openAddInGroup = (groupName: string) => {
+    const seed: Record<string, string> = {};
+    fields.forEach((f) => {
+      if (f.defaultValue !== undefined) seed[f.name] = String(f.defaultValue);
+    });
+    if (groupBy && groupName !== '(belum diisi)') seed[groupBy] = groupName;
+    setFormValues(seed);
+    setEditingItem(null);
+    setFormError(null);
+    setIsFormOpen(true);
+  };
+
+  const cellValue = (row: Record<string, unknown>, col: TableColumn) => {
+    const raw = row[col.key];
+    const text = String(raw ?? '').trim();
+    if (!text) return '—';
+    if (col.key === 'JenisKelamin') {
+      if (text === 'Laki-laki') return 'L';
+      if (text === 'Perempuan') return 'P';
+    }
+    return text;
+  };
+
   return (
     <div className="space-y-6">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[#64748B]">
@@ -200,6 +302,144 @@ export function TabelView({
           <Loader2 className="w-7 h-7 animate-spin text-[#1E3A8A]" />
           <p className="mt-3 text-sm font-medium">Memuat data dari Google Sheets…</p>
         </div>
+      ) : groupBy ? (
+        <>
+          {/* Pencarian + filter kelompok */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari nama, jabatan, atau alamat…"
+                className="w-full min-h-[44px] pl-9 pr-3 rounded-lg border border-[#CBD5E1] text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+              />
+            </div>
+            <select
+              value={groupFilter}
+              onChange={(e) => setGroupFilter(e.target.value)}
+              className="sm:w-56 min-h-[44px] px-3 rounded-lg border border-[#CBD5E1] text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            >
+              <option value="">Semua {groupLabel}</option>
+              {groupChoices.map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+
+          {groups.length === 0 ? (
+            <div className="bg-white border border-[#E2E8F0] rounded-xl py-14 text-center">
+              <Users className="w-8 h-8 text-[#94A3B8] mx-auto mb-2" />
+              <p className="text-sm font-medium text-[#475569]">
+                Belum ada data yang cocok.
+              </p>
+              <Button variant="outline" onClick={openAdd} className="mt-4 mx-auto bg-white">
+                <Plus className="w-4 h-4 mr-1.5" /> Tambah Data
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {groups.map(([groupName, rows]) => (
+                <section
+                  key={groupName}
+                  className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden"
+                >
+                  {/* Judul kelompok (mis. RW 16) */}
+                  <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-5 py-3 bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-9 h-9 rounded-lg bg-[#EFF6FF] text-[#1E3A8A] flex items-center justify-center flex-shrink-0">
+                        <Users className="w-4.5 h-4.5" />
+                      </span>
+                      <div>
+                        <h2 className="text-base font-bold text-[#0F172A] leading-tight">
+                          {groupName.toLowerCase().startsWith(groupLabel.toLowerCase())
+                            ? groupName
+                            : `${groupLabel} ${groupName}`}
+                        </h2>
+                        <p className="text-xs text-[#64748B]">
+                          {rows.length} orang tercatat
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openAddInGroup(groupName)}
+                      className="justify-center bg-white"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      Tambah Anggota
+                    </Button>
+                  </header>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-white text-[#475569]">
+                          <th className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide border-b border-[#E2E8F0]">No</th>
+                          {groupColumns.map((col) => (
+                            <th
+                              key={col.key}
+                              className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide border-b border-[#E2E8F0] whitespace-nowrap"
+                            >
+                              {col.label}
+                            </th>
+                          ))}
+                          <th className="px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide border-b border-[#E2E8F0]">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((row, idx) => (
+                          <tr key={String(row.ID ?? idx)} className="hover:bg-[#F8FAFC]">
+                            <td className="px-4 py-2.5 text-[#64748B] border-b border-[#F1F5F9]">{idx + 1}</td>
+                            {groupColumns.map((col) => (
+                              <td
+                                key={col.key}
+                                className={`px-4 py-2.5 border-b border-[#F1F5F9] ${
+                                  col.key === 'Nama' ? 'font-semibold text-[#0F172A]' : 'text-[#475569]'
+                                }`}
+                              >
+                                {cellValue(row, col)}
+                              </td>
+                            ))}
+                            <td className="px-4 py-2.5 border-b border-[#F1F5F9]">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingItem(row)}
+                                  title="Lihat detail"
+                                  className="p-1.5 rounded-md text-[#475569] hover:bg-[#F1F5F9] hover:text-[#1E3A8A] min-h-[32px] min-w-[32px] flex items-center justify-center"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openEdit(row)}
+                                  title="Ubah"
+                                  className="p-1.5 rounded-md text-[#475569] hover:bg-[#F1F5F9] hover:text-[#1E3A8A] min-h-[32px] min-w-[32px] flex items-center justify-center"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeletingItem(row)}
+                                  title="Hapus"
+                                  className="p-1.5 rounded-md text-[#B91C1C] hover:bg-[#FEF2F2] min-h-[32px] min-w-[32px] flex items-center justify-center"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         <DataTable
           columns={config.columns as TableColumn[]}
