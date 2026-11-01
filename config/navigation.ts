@@ -41,6 +41,12 @@ export const ROLE_NAVIGATION: Record<UserRole, MenuGroup[]> = {
           iconName: 'BarChart3',
           description: 'Rekap umur, agama, pendidikan & mata pencaharian format Kota Bandung',
         },
+        {
+          title: 'Profil Ekbang Kelurahan',
+          href: '/lurah/profil-ekbang',
+          iconName: 'FileSpreadsheet',
+          description: 'Rekapitulasi otomatis profil SDA, Ekonomi & Sarpras 16 RW serta Unduh Excel resmi',
+        },
       ],
     },
   ],
@@ -294,6 +300,17 @@ export const ROLE_NAVIGATION: Record<UserRole, MenuGroup[]> = {
           href: '/ekbang/petugas-magot',
           iconName: 'Sparkles',
           description: 'Petugas budidaya magot pengolah sampah organik kelurahan',
+        },
+      ],
+    },
+    {
+      groupName: 'PROFIL KEWILAYAHAN',
+      items: [
+        {
+          title: 'Profil Wilayah Ekbang',
+          href: '/ekbang/profil-ekbang',
+          iconName: 'Trees',
+          description: 'Input dan pemutakhiran data SDA & Orbitas, Usaha Ekonomi, dan Sarpras per RW',
         },
       ],
     },

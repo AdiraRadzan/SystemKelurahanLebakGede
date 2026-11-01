@@ -32,6 +32,8 @@ import {
   MOCK_IBU_HAMIL,
   MOCK_LANSIA,
 } from '@/data/mock-data';
+import { ProfilEkbangRwData } from '@/types/ekbang';
+import { MOCK_PROFIL_EKBANG_RW } from '@/data/mock-ekbang-profil';
 
 export const INITIAL_DATA_MAP: Record<string, any[]> = {
   // Programs and Activities (scoped or shared)
@@ -84,6 +86,9 @@ export const INITIAL_DATA_MAP: Record<string, any[]> = {
 
 interface KelurahanStore {
   data: Record<string, any[]>;
+  profilEkbang: ProfilEkbangRwData[];
+
+  // Generic Module Items
   getItems: (key: string) => any[];
   getItemById: (key: string, id: string) => any | undefined;
   addItem: (key: string, item: any) => void;
@@ -94,12 +99,19 @@ interface KelurahanStore {
   rejectItem: (key: string, id: string, catatan: string) => void;
   disposisiSurat: (id: string, targetRole: string, targetTitle: string, instruksi: string) => void;
   resetAllData: () => void;
+
+  // Profil Ekbang (CRUD & Read)
+  getProfilEkbangList: () => ProfilEkbangRwData[];
+  getProfilEkbangByRw: (rw: string) => ProfilEkbangRwData | undefined;
+  updateProfilEkbangByRw: (rw: string, updatedFields: Partial<ProfilEkbangRwData>) => void;
+  resetProfilEkbang: () => void;
 }
 
 export const useKelurahanStore = create<KelurahanStore>()(
   persist(
     (set, get) => ({
       data: INITIAL_DATA_MAP,
+      profilEkbang: MOCK_PROFIL_EKBANG_RW,
 
       getItems: (key: string) => {
         const state = get();
@@ -192,7 +204,58 @@ export const useKelurahanStore = create<KelurahanStore>()(
       },
 
       resetAllData: () => {
-        set({ data: INITIAL_DATA_MAP });
+        set({
+          data: INITIAL_DATA_MAP,
+          profilEkbang: MOCK_PROFIL_EKBANG_RW,
+        });
+      },
+
+      // Profil Ekbang implementation
+      getProfilEkbangList: () => {
+        const list = get().profilEkbang;
+        return list && list.length > 0 ? list : MOCK_PROFIL_EKBANG_RW;
+      },
+
+      getProfilEkbangByRw: (rw: string) => {
+        const list = get().getProfilEkbangList();
+        return list.find((item) => item.rw.toLowerCase() === rw.toLowerCase());
+      },
+
+      updateProfilEkbangByRw: (rw: string, updatedFields: Partial<ProfilEkbangRwData>) => {
+        set((state) => {
+          const currentList = state.profilEkbang && state.profilEkbang.length > 0
+            ? state.profilEkbang
+            : MOCK_PROFIL_EKBANG_RW;
+
+          const updated = currentList.map((item) => {
+            if (item.rw.toLowerCase() === rw.toLowerCase()) {
+              return {
+                ...item,
+                ...updatedFields,
+                sda: {
+                  ...item.sda,
+                  ...(updatedFields.sda || {}),
+                },
+                ekonomi: {
+                  ...item.ekonomi,
+                  ...(updatedFields.ekonomi || {}),
+                },
+                sarpras: {
+                  ...item.sarpras,
+                  ...(updatedFields.sarpras || {}),
+                },
+                terakhirDiperbarui: new Date().toISOString().slice(0, 10),
+              };
+            }
+            return item;
+          });
+
+          return { profilEkbang: updated };
+        });
+      },
+
+      resetProfilEkbang: () => {
+        set({ profilEkbang: MOCK_PROFIL_EKBANG_RW });
       },
     }),
     {
