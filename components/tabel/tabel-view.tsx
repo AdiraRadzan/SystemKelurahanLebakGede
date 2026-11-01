@@ -23,6 +23,8 @@ import {
   Pencil,
   Trash2,
   Users,
+  ChevronDown,
+  Layers,
 } from 'lucide-react';
 
 // ============================================================================
@@ -55,6 +57,19 @@ function buildFields(config: ModuleConfig, hidden: string[]): FormField[] {
   return config.fields.filter((f) => !hidden.includes(f.name));
 }
 
+// Pengurus tingkat RW: jabatannya mengandung "Rukun Warga".
+function isRwLevel(row: Record<string, unknown>): boolean {
+  return String(row.Jabatan ?? '').includes('Rukun Warga');
+}
+
+// Nomor RT diambil dari jabatan, mis. "Ketua Rukun Tetangga 03" -> "RT 03".
+function rtNumberOf(row: Record<string, unknown>): string {
+  const j = String(row.Jabatan ?? '');
+  const m = j.match(/Rukun\s+Tetangga\s*(\d+)/i) ?? j.match(/\bRT\s*(\d+)/i);
+  if (!m) return '';
+  return `RT ${String(Number(m[1])).padStart(2, '0')}`;
+}
+
 export function TabelView({
   table,
   config,
@@ -71,6 +86,9 @@ export function TabelView({
   const [loadError, setLoadError] = useState<string | null>(initialError);
   const [search, setSearch] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
+  // Tingkat 1: kartu RW (default terbuka). Tingkat 2: kartu RT (default tertutup).
+  const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>({});
+  const [openRts, setOpenRts] = useState<Record<string, boolean>>({});
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Record<string, unknown> | null>(null);
@@ -247,6 +265,87 @@ export function TabelView({
     setIsFormOpen(true);
   };
 
+  // Tambah anggota RT tertentu: RW + jabatan RT otomatis terisi.
+  const openAddInRt = (groupName: string, rtName: string) => {
+    const seed: Record<string, string> = {};
+    fields.forEach((f) => {
+      if (f.defaultValue !== undefined) seed[f.name] = String(f.defaultValue);
+    });
+    if (groupBy && groupName !== '(belum diisi)') seed[groupBy] = groupName;
+    if (rtName.startsWith('RT ')) seed.Jabatan = `Ketua Rukun Tetangga ${rtName.slice(3)}`;
+    setFormValues(seed);
+    setEditingItem(null);
+    setFormError(null);
+    setIsFormOpen(true);
+  };
+
+  // Tabel anggota (dipakai untuk tingkat RW maupun RT).
+  const renderMemberTable = (rows: Record<string, unknown>[]) => (
+    <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-[#F8FAFC] text-[#475569]">
+            <th className="px-3 sm:px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide border-b border-[#E2E8F0]">No</th>
+            {groupColumns.map((col) => (
+              <th
+                key={col.key}
+                className="px-3 sm:px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide border-b border-[#E2E8F0] whitespace-nowrap"
+              >
+                {col.label}
+              </th>
+            ))}
+            <th className="px-3 sm:px-4 py-2 text-right text-[11px] font-bold uppercase tracking-wide border-b border-[#E2E8F0]">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, idx) => (
+            <tr key={String(row.ID ?? idx)} className="hover:bg-[#F8FAFC]">
+              <td className="px-3 sm:px-4 py-2 text-[#64748B] border-b border-[#F1F5F9]">{idx + 1}</td>
+              {groupColumns.map((col) => (
+                <td
+                  key={col.key}
+                  className={`px-3 sm:px-4 py-2 border-b border-[#F1F5F9] ${
+                    col.key === 'Nama' ? 'font-semibold text-[#0F172A]' : 'text-[#475569]'
+                  }`}
+                >
+                  {cellValue(row, col)}
+                </td>
+              ))}
+              <td className="px-3 sm:px-4 py-2 border-b border-[#F1F5F9]">
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setViewingItem(row)}
+                    title="Lihat detail"
+                    className="p-1.5 rounded-md text-[#475569] hover:bg-[#F1F5F9] hover:text-[#1E3A8A] min-h-[32px] min-w-[32px] flex items-center justify-center"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(row)}
+                    title="Ubah"
+                    className="p-1.5 rounded-md text-[#475569] hover:bg-[#F1F5F9] hover:text-[#1E3A8A] min-h-[32px] min-w-[32px] flex items-center justify-center"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeletingItem(row)}
+                    title="Hapus"
+                    className="p-1.5 rounded-md text-[#B91C1C] hover:bg-[#FEF2F2] min-h-[32px] min-w-[32px] flex items-center justify-center"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
   const cellValue = (row: Record<string, unknown>, col: TableColumn) => {
     const raw = row[col.key];
     const text = String(raw ?? '').trim();
@@ -330,113 +429,178 @@ export function TabelView({
           {groups.length === 0 ? (
             <div className="bg-white border border-[#E2E8F0] rounded-xl py-14 text-center">
               <Users className="w-8 h-8 text-[#94A3B8] mx-auto mb-2" />
-              <p className="text-sm font-medium text-[#475569]">
-                Belum ada data yang cocok.
-              </p>
+              <p className="text-sm font-medium text-[#475569]">Belum ada data yang cocok.</p>
               <Button variant="outline" onClick={openAdd} className="mt-4 mx-auto bg-white">
                 <Plus className="w-4 h-4 mr-1.5" /> Tambah Data
               </Button>
             </div>
           ) : (
             <div className="space-y-5">
-              {groups.map(([groupName, rows]) => (
-                <section
-                  key={groupName}
-                  className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden"
-                >
-                  {/* Judul kelompok (mis. RW 16) */}
-                  <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-5 py-3 bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-9 h-9 rounded-lg bg-[#EFF6FF] text-[#1E3A8A] flex items-center justify-center flex-shrink-0">
-                        <Users className="w-4.5 h-4.5" />
-                      </span>
-                      <div>
-                        <h2 className="text-base font-bold text-[#0F172A] leading-tight">
-                          {groupName.toLowerCase().startsWith(groupLabel.toLowerCase())
-                            ? groupName
-                            : `${groupLabel} ${groupName}`}
-                        </h2>
-                        <p className="text-xs text-[#64748B]">
-                          {rows.length} orang tercatat
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openAddInGroup(groupName)}
-                      className="justify-center bg-white"
-                    >
-                      <Plus className="w-3.5 h-3.5 mr-1" />
-                      Tambah Anggota
-                    </Button>
-                  </header>
+              {groups.map(([groupName, groupRows]) => {
+                const rwRows = groupRows.filter(isRwLevel);
+                const rtMap = new Map<string, Record<string, unknown>[]>();
+                groupRows.filter((r) => !isRwLevel(r)).forEach((r) => {
+                  const key = rtNumberOf(r) || '(RT belum diisi)';
+                  const list = rtMap.get(key);
+                  if (list) list.push(r);
+                  else rtMap.set(key, [r]);
+                });
+                const rtEntries = Array.from(rtMap.entries()).sort((a, b) =>
+                  a[0].localeCompare(b[0], 'id', { numeric: true })
+                );
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-white text-[#475569]">
-                          <th className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide border-b border-[#E2E8F0]">No</th>
-                          {groupColumns.map((col) => (
-                            <th
-                              key={col.key}
-                              className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide border-b border-[#E2E8F0] whitespace-nowrap"
+                const rwOpen = !closedGroups[groupName];
+                const label =
+                  groupName.toLowerCase().startsWith(groupLabel.toLowerCase())
+                    ? groupName
+                    : `${groupLabel} ${groupName}`;
+
+                return (
+                  <section
+                    key={groupName}
+                    className="bg-white border-2 border-[#CBD5E1] rounded-xl overflow-hidden"
+                  >
+                    {/* ── Tingkat 1: RW ─────────────────────────────── */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setClosedGroups((prev) => ({ ...prev, [groupName]: rwOpen }))
+                      }
+                      aria-expanded={rwOpen}
+                      className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 bg-[#F8FAFC] hover:bg-[#F1F5F9] text-left transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-10 h-10 rounded-lg bg-[#1E3A8A] text-white flex items-center justify-center flex-shrink-0">
+                          <Users className="w-5 h-5" />
+                        </span>
+                        <div className="min-w-0">
+                          <h2 className="text-base font-bold text-[#0F172A] leading-tight truncate">
+                            {label}
+                          </h2>
+                          <p className="text-xs text-[#64748B]">
+                            {rwRows.length} pengurus RW · {rtEntries.length} RT · {groupRows.length} orang
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronDown
+                        className={`w-5 h-5 text-[#64748B] flex-shrink-0 transition-transform duration-200 ${
+                          rwOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {rwOpen && (
+                      <div className="p-4 sm:p-5 space-y-5">
+                        {/* A. Pengurus tingkat RW */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-sm font-bold text-[#0F172A]">
+                              Pengurus {label}
+                            </h3>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openAddInGroup(groupName)}
+                              className="justify-center"
                             >
-                              {col.label}
-                            </th>
-                          ))}
-                          <th className="px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide border-b border-[#E2E8F0]">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map((row, idx) => (
-                          <tr key={String(row.ID ?? idx)} className="hover:bg-[#F8FAFC]">
-                            <td className="px-4 py-2.5 text-[#64748B] border-b border-[#F1F5F9]">{idx + 1}</td>
-                            {groupColumns.map((col) => (
-                              <td
-                                key={col.key}
-                                className={`px-4 py-2.5 border-b border-[#F1F5F9] ${
-                                  col.key === 'Nama' ? 'font-semibold text-[#0F172A]' : 'text-[#475569]'
-                                }`}
-                              >
-                                {cellValue(row, col)}
-                              </td>
-                            ))}
-                            <td className="px-4 py-2.5 border-b border-[#F1F5F9]">
-                              <div className="flex items-center justify-end gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setViewingItem(row)}
-                                  title="Lihat detail"
-                                  className="p-1.5 rounded-md text-[#475569] hover:bg-[#F1F5F9] hover:text-[#1E3A8A] min-h-[32px] min-w-[32px] flex items-center justify-center"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => openEdit(row)}
-                                  title="Ubah"
-                                  className="p-1.5 rounded-md text-[#475569] hover:bg-[#F1F5F9] hover:text-[#1E3A8A] min-h-[32px] min-w-[32px] flex items-center justify-center"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setDeletingItem(row)}
-                                  title="Hapus"
-                                  className="p-1.5 rounded-md text-[#B91C1C] hover:bg-[#FEF2F2] min-h-[32px] min-w-[32px] flex items-center justify-center"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              ))}
+                              <Plus className="w-3.5 h-3.5 mr-1" />
+                              Anggota RW
+                            </Button>
+                          </div>
+                          {rwRows.length ? (
+                            renderMemberTable(rwRows)
+                          ) : (
+                            <p className="text-xs text-[#64748B] py-3 text-center border border-dashed border-[#E2E8F0] rounded-lg">
+                              Belum ada pengurus tingkat RW.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* B. Tingkat 2: RT di dalam RW */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Layers className="w-4 h-4 text-[#1E3A8A]" />
+                            <h3 className="text-sm font-bold text-[#0F172A]">
+                              Rukun Tetangga di {label}
+                            </h3>
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#E2E8F0] text-[#475569]">
+                              {rtEntries.length}
+                            </span>
+                          </div>
+
+                          {rtEntries.length === 0 ? (
+                            <p className="text-xs text-[#64748B] py-3 text-center border border-dashed border-[#E2E8F0] rounded-lg">
+                              Belum ada data RT pada {label}.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {rtEntries.map(([rtName, rtRows]) => {
+                                const rtKey = `${groupName}|${rtName}`;
+                                const rtOpen = Boolean(openRts[rtKey]);
+                                return (
+                                  <div
+                                    key={rtKey}
+                                    className="border border-[#E2E8F0] rounded-lg overflow-hidden bg-[#FCFDFE]"
+                                  >
+                                    {/* Header RT — klik untuk buka isinya */}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setOpenRts((prev) => ({ ...prev, [rtKey]: !rtOpen }))
+                                      }
+                                      aria-expanded={rtOpen}
+                                      className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 hover:bg-[#F1F5F9] text-left transition-colors"
+                                    >
+                                      <span className="flex items-center gap-2 min-w-0">
+                                        <span className="w-7 h-7 rounded-md bg-[#EFF6FF] text-[#1E3A8A] flex items-center justify-center flex-shrink-0 text-[11px] font-bold">
+                                          {rtName.replace(/[^0-9]/g, '').slice(-2) || 'RT'}
+                                        </span>
+                                        <span className="text-sm font-semibold text-[#0F172A] truncate">
+                                          {rtName}
+                                        </span>
+                                        <span className="text-xs text-[#64748B]">
+                                          {rtRows.length} orang
+                                        </span>
+                                      </span>
+                                      <span className="flex items-center gap-1.5 flex-shrink-0">
+                                        <span className="text-[11px] font-semibold text-[#1E3A8A] hidden sm:inline">
+                                          {rtOpen ? 'Tutup' : 'Lihat isi'}
+                                        </span>
+                                        <ChevronDown
+                                          className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${
+                                            rtOpen ? 'rotate-180' : ''
+                                          }`}
+                                        />
+                                      </span>
+                                    </button>
+
+                                    {rtOpen && (
+                                      <div className="border-t border-[#E2E8F0] bg-white">
+                                        <div className="flex justify-end px-3 pt-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => openAddInRt(groupName, rtName)}
+                                            className="justify-center"
+                                          >
+                                            <Plus className="w-3.5 h-3.5 mr-1" />
+                                            Anggota {rtName}
+                                          </Button>
+                                        </div>
+                                        {renderMemberTable(rtRows)}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
             </div>
           )}
         </>

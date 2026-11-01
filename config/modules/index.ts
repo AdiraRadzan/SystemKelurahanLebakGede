@@ -60,6 +60,29 @@ export const SUMBER_BIAYA_OPTIONS = [
 ];
 
 
+// Jabatan pengurus RW/RT — dipakai modul Data Pengurus RW & RT.
+const RW_ROLES = ['Ketua', 'Sekretaris', 'Bendahara'];
+const RT_COUNT = 15;
+
+export const JABATAN_RW_OPTIONS = RW_ROLES.map((r) => ({
+  label: `${r} RW`,
+  value: `${r} Rukun Warga`,
+}));
+
+export const JABATAN_RT_OPTIONS = Array.from({ length: RT_COUNT }, (_, i) => {
+  const no = String(i + 1).padStart(2, '0');
+  return RW_ROLES.map((r) => ({
+    label: `${r} RT ${no}`,
+    value: `${r} Rukun Tetangga ${no}`,
+  }));
+}).flat();
+
+export const JABATAN_OPTIONS = [
+  ...JABATAN_RW_OPTIONS,
+  ...JABATAN_RT_OPTIONS,
+  { label: 'Anggota Linmas', value: 'Anggota Linmas' },
+];
+
 export const ALL_MODULE_CONFIGS: ModuleConfig[] = [
   // ==========================================
   // SEKRETARIS KELURAHAN (7 MODUL)
@@ -502,27 +525,7 @@ export const ALL_MODULE_CONFIGS: ModuleConfig[] = [
     fields: [
       { name: 'Wilayah', label: 'Wilayah RW', type: 'select', required: true, options: RW_OPTIONS },
       { name: 'Nama', label: 'Nama Lengkap', type: 'text', required: true, placeholder: 'Contoh: RUSTAMA' },
-      { name: 'Jabatan', label: 'Jabatan', type: 'select', required: true, options: [
-        { label: 'Ketua RW', value: 'Ketua Rukun Warga' },
-        { label: 'Sekretaris RW', value: 'Sekretaris Rukun Warga' },
-        { label: 'Bendahara RW', value: 'Bendahara Rukun Warga' },
-        { label: 'Ketua RT 01', value: 'Ketua Rukun Tetangga 01' },
-        { label: 'Sekretaris RT 01', value: 'Sekretaris Rukun Tetangga 01' },
-        { label: 'Bendahara RT 01', value: 'Bendahara Rukun Tetangga 01' },
-        { label: 'Ketua RT 02', value: 'Ketua Rukun Tetangga 02' },
-        { label: 'Sekretaris RT 02', value: 'Sekretaris Rukun Tetangga 02' },
-        { label: 'Bendahara RT 02', value: 'Bendahara Rukun Tetangga 02' },
-        { label: 'Ketua RT 03', value: 'Ketua Rukun Tetangga 03' },
-        { label: 'Sekretaris RT 03', value: 'Sekretaris Rukun Tetangga 03' },
-        { label: 'Bendahara RT 03', value: 'Bendahara Rukun Tetangga 03' },
-        { label: 'Ketua RT 04', value: 'Ketua Rukun Tetangga 04' },
-        { label: 'Sekretaris RT 04', value: 'Sekretaris Rukun Tetangga 04' },
-        { label: 'Bendahara RT 04', value: 'Bendahara Rukun Tetangga 04' },
-        { label: 'Ketua RT 05', value: 'Ketua Rukun Tetangga 05' },
-        { label: 'Sekretaris RT 05', value: 'Sekretaris Rukun Tetangga 05' },
-        { label: 'Bendahara RT 05', value: 'Bendahara Rukun Tetangga 05' },
-        { label: 'Anggota Linmas', value: 'Anggota Linmas' },
-      ] },
+      { name: 'Jabatan', label: 'Jabatan', type: 'select', required: true, options: JABATAN_OPTIONS },
       { name: 'JenisKelamin', label: 'Jenis Kelamin', type: 'select', options: [{ label: 'Laki-laki', value: 'Laki-laki' }, { label: 'Perempuan', value: 'Perempuan' }] },
       { name: 'TempatTglLahir', label: 'Tempat, Tgl. Lahir', type: 'text', placeholder: 'Contoh: Pati, 02 Oktober 1956' },
       { name: 'Status', label: 'Status Perkawinan', type: 'select', options: [{ label: 'Belum Kawin', value: 'Belum Kawin' }, { label: 'Kawin', value: 'Kawin' }, { label: 'Duda', value: 'Duda' }, { label: 'Janda', value: 'Janda' }] },
