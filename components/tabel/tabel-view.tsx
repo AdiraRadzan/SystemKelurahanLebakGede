@@ -57,17 +57,31 @@ function buildFields(config: ModuleConfig, hidden: string[]): FormField[] {
   return config.fields.filter((f) => !hidden.includes(f.name));
 }
 
-// Pengurus tingkat RW: jabatannya mengandung "Rukun Warga".
+// Pengurus tingkat RW: jabatannya menyebut "warga" tetapi bukan "tetangga".
 function isRwLevel(row: Record<string, unknown>): boolean {
-  return String(row.Jabatan ?? '').includes('Rukun Warga');
+  const j = String(row.Jabatan ?? '').toLowerCase();
+  return j.includes('warga') && !j.includes('tetangga');
 }
 
-// Nomor RT diambil dari jabatan, mis. "Ketua Rukun Tetangga 03" -> "RT 03".
+// Nomor RT diambil dari jabatan, mis. "Ketua Rukun Tetangga 03" / "Ketua RT 3" -> "RT 03".
 function rtNumberOf(row: Record<string, unknown>): string {
   const j = String(row.Jabatan ?? '');
-  const m = j.match(/Rukun\s+Tetangga\s*(\d+)/i) ?? j.match(/\bRT\s*(\d+)/i);
+  const m = j.match(/tetangga\s*(\d+)/i) ?? j.match(/\brt\s*(\d+)/i);
   if (!m) return '';
   return `RT ${String(Number(m[1])).padStart(2, '0')}`;
+}
+
+// "16" -> "RW 16", "RW 16" -> "RW 16", "RW16" -> "RW 16".
+function formatGroupLabel(raw: string, groupLabel: string): string {
+  const s = raw.trim();
+  if (!s) return `${groupLabel} (belum diisi)`;
+  if (/^\d+$/.test(s)) return `${groupLabel} ${String(Number(s)).padStart(2, '0')}`;
+  const m = s.match(/^([A-Za-z]+)\s*(\d+)$/);
+  if (m && m[1].toLowerCase() === groupLabel.toLowerCase()) {
+    return `${groupLabel} ${String(Number(m[2])).padStart(2, '0')}`;
+  }
+  if (s.toLowerCase().startsWith(groupLabel.toLowerCase())) return s;
+  return `${groupLabel} ${s}`;
 }
 
 export function TabelView({
@@ -230,6 +244,11 @@ export function TabelView({
 
     const order = groupOptions?.map((o) => o.value) ?? [];
     return Array.from(map.entries()).sort((a, b) => {
+      // Kelompok "belum diisi" selalu paling bawah.
+      const aEmpty = a[0].startsWith('(');
+      const bEmpty = b[0].startsWith('(');
+      if (aEmpty !== bEmpty) return aEmpty ? 1 : -1;
+
       const ia = order.indexOf(a[0]);
       const ib = order.indexOf(b[0]);
       if (ia !== -1 && ib !== -1) return ia - ib;
@@ -450,10 +469,7 @@ export function TabelView({
                 );
 
                 const rwOpen = !closedGroups[groupName];
-                const label =
-                  groupName.toLowerCase().startsWith(groupLabel.toLowerCase())
-                    ? groupName
-                    : `${groupLabel} ${groupName}`;
+                const label = formatGroupLabel(groupName, groupLabel);
 
                 return (
                   <section

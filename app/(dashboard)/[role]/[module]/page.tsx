@@ -3,7 +3,6 @@ import { notFound, redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { COOKIE_NAME, verifySession } from '@/lib/auth';
 import { getModuleConfig } from '@/config/modules';
-import { RW_OPTIONS } from '@/config/modules';
 import { ModuleView } from '@/components/modules/module-view';
 import { TabelView } from '@/components/tabel/tabel-view';
 import { PENDUDUK_API_CONFIGURED, listTable } from '@/lib/sheets';
@@ -91,7 +90,6 @@ export default async function ModulePage({ params }: ModulePageProps) {
         initialError={error}
         groupBy={grouped?.groupBy}
         groupLabel={grouped?.groupLabel}
-        groupOptions={grouped ? RW_OPTIONS : undefined}
       />
     );
   }
