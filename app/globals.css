@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --primary: #1E3A8A;
+  --primary-hover: #2563EB;
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --border-card: #E2E8F0;
+  --text-main: #0F172A;
+  --text-muted: #475569;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family: var(--font-inter);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom utility classes matching standard kelurahan design system */
+.bg-navy {
+  background-color: #1E3A8A;
+}
+
+.bg-navy-hover:hover {
+  background-color: #2563EB;
+}
+
+.text-navy {
+  color: #1E3A8A;
+}
+
+.border-navy {
+  border-color: #1E3A8A;
+}
+
+/* Minimum interactive target size rule: min 44px */
+.btn-touch-target {
+  min-height: 44px;
+}
+
+/* Custom horizontal scrollbar untuk tabel agar selalu tampak jelas dan mudah digeser */
+.table-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #94A3B8 #F1F5F9;
+}
+
+.table-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-scrollbar::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 4px;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb {
+  background: #94A3B8;
+  border-radius: 4px;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
+}
