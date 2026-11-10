@@ -46,3 +46,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Data master penduduk (data pribadi, jangan di-commit)
+MASTER DATA PENDUDUK*.xls

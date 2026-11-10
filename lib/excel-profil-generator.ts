@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import path from 'path';
 import fs from 'fs';
 import { ProfilKesosRwData, ProfilKesosAggregate } from '@/types/kesos';
@@ -15,7 +15,7 @@ interface GenerateOptions {
   tahun?: number;
 }
 
-export function generateOfficialProfilExcel(options: GenerateOptions): Buffer {
+export async function generateOfficialProfilExcel(options: GenerateOptions): Promise<Buffer> {
   const {
     rw,
     kesosData,
@@ -29,11 +29,8 @@ export function generateOfficialProfilExcel(options: GenerateOptions): Buffer {
 
   // Robust path resolution for template file
   const candidatePaths = [
-    path.join(process.cwd(), 'MASTER DATA PENDUDUK.xls'),
+    path.join(process.cwd(), 'data', 'template_master.xlsx'),
     path.join(process.cwd(), 'data', 'template_profil.xlsx'),
-    path.resolve(__dirname, '../../MASTER DATA PENDUDUK.xls'),
-    path.resolve(__dirname, '../../../MASTER DATA PENDUDUK.xls'),
-    path.resolve(__dirname, '../../../../MASTER DATA PENDUDUK.xls'),
   ];
 
   let templatePath = '';
@@ -46,29 +43,24 @@ export function generateOfficialProfilExcel(options: GenerateOptions): Buffer {
 
   if (!templatePath) {
     throw new Error(
-      `Master template MASTER DATA PENDUDUK.xls tidak ditemukan. Lokasi dicari: ${candidatePaths[0]}`
+      `Master template data/template_master.xlsx tidak ditemukan. Lokasi dicari: ${candidatePaths[0]}`
     );
   }
 
-  // Read master template using Buffer
-  const fileBuf = fs.readFileSync(templatePath);
-  const srcWb = XLSX.read(fileBuf, { type: 'buffer' });
+  // Baca template .xlsx dengan ExcelJS agar border/style/merge tetap persis
+  const outWb = new ExcelJS.Workbook();
+  await outWb.xlsx.readFile(templatePath);
 
-  const modelESheet = srcWb.Sheets['MODEL E'];
-  const profilSheet = srcWb.Sheets['PROFIL'];
+  const modelESheet = outWb.getWorksheet('MODEL E');
+  const profilSheet = outWb.getWorksheet('PROFIL');
 
   if (!profilSheet) {
     throw new Error('Sheet PROFIL tidak ditemukan di master template.');
   }
 
-  // Clone sheets into new workbook
-  const outWb = XLSX.utils.book_new();
-
-  // Helper to safely set cell value
-  const setCell = (sheet: XLSX.WorkSheet, col: string, row: number, val: any) => {
-    const addr = `${col}${row}`;
-    const cellType = typeof val === 'number' ? 'n' : 's';
-    sheet[addr] = { t: cellType, v: val, w: String(val) };
+  // Isi nilai sel tanpa mengubah style (border, font, alignment tetap dari template)
+  const setCell = (sheet: ExcelJS.Worksheet, col: string, row: number, val: any) => {
+    sheet.getCell(`${col}${row}`).value = val;
   };
 
   // Determine active dataset (single RW or aggregate)
@@ -82,7 +74,7 @@ export function generateOfficialProfilExcel(options: GenerateOptions): Buffer {
 
   // 1. POPULATE SHEET: MODEL E (COVER PROFIL)
   if (modelESheet) {
-    const clonedModelE = JSON.parse(JSON.stringify(modelESheet));
+    const clonedModelE = modelESheet;
 
     const rwLabel = isAll ? 'SELURUH RW (16 RW)' : rw.replace('RW ', '');
     setCell(clonedModelE, 'C', 11, rwLabel); // Row 11: RUKUN WARGA : 16
@@ -97,11 +89,10 @@ export function generateOfficialProfilExcel(options: GenerateOptions): Buffer {
       : (namaKetuaRw || targetKesosRw?.namaKetuaRw || `Ketua ${rw}`);
     setCell(clonedModelE, 'E', 27, signName);
 
-    XLSX.utils.book_append_sheet(outWb, clonedModelE, 'MODEL E');
   }
 
   // 2. POPULATE SHEET: PROFIL (MAIN 509-ROW OFFICIAL SHEET)
-  const clonedProfil = JSON.parse(JSON.stringify(profilSheet));
+  const clonedProfil = profilSheet;
 
   // --- I. POTENSI KELEMBAGAAN ---
   // Ormas RW (Rows 125-128)
@@ -137,8 +128,18 @@ export function generateOfficialProfilExcel(options: GenerateOptions): Buffer {
     setCell(clonedProfil, 'I', 161, kKesos.pendidikanKeagamaan?.unit || 0);
     setCell(clonedProfil, 'M', 161, kKesos.pendidikanKeagamaan?.peserta || 0);
 
-    setCell(clonedProfil, 'I', 164, kKesos.kursusPelatihan?.unit || 0);
-    setCell(clonedProfil, 'M', 164, kKesos.kursusPelatihan?.peserta || 0);
+    setCell(clonedProfil, 'I', 162, kKesos.kursusBahasa?.unit || 0);
+    setCell(clonedProfil, 'M', 162, kKesos.kursusBahasa?.peserta || 0);
+    setCell(clonedProfil, 'I', 163, kKesos.kursusMontir?.unit || 0);
+    setCell(clonedProfil, 'M', 163, kKesos.kursusMontir?.peserta || 0);
+    setCell(clonedProfil, 'I', 164, kKesos.kursusKomputer?.unit || 0);
+    setCell(clonedProfil, 'M', 164, kKesos.kursusKomputer?.peserta || 0);
+    setCell(clonedProfil, 'I', 165, kKesos.kursusKecantikan?.unit || 0);
+    setCell(clonedProfil, 'M', 165, kKesos.kursusKecantikan?.peserta || 0);
+    setCell(clonedProfil, 'I', 166, kKesos.kursusRiasPengantin?.unit || 0);
+    setCell(clonedProfil, 'M', 166, kKesos.kursusRiasPengantin?.peserta || 0);
+    setCell(clonedProfil, 'I', 167, kKesos.kursusLas?.unit || 0);
+    setCell(clonedProfil, 'M', 167, kKesos.kursusLas?.peserta || 0);
   }
 
   // Kelembagaan Ekonomi (Rows 137-151)
@@ -308,10 +309,9 @@ export function generateOfficialProfilExcel(options: GenerateOptions): Buffer {
     setCell(clonedProfil, 'I', 478, kesHealth.praktekDokterBidan || 0);
   }
 
-  // Append populated sheet
-  XLSX.utils.book_append_sheet(outWb, clonedProfil, 'PROFIL');
+  // Hitung ulang rumus (COUNTIFS dsb.) saat file dibuka di Excel
+  outWb.calcProperties.fullCalcOnLoad = true;
 
-  // Generate buffer in .xlsx format
-  const outBuffer = XLSX.write(outWb, { type: 'buffer', bookType: 'xlsx' });
-  return outBuffer;
+  const arr = await outWb.xlsx.writeBuffer();
+  return Buffer.from(arr as ArrayBuffer);
 }

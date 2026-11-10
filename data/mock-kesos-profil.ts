@@ -67,7 +67,12 @@ export const MOCK_PROFIL_KESOS_RW: ProfilKesosRwData[] = RW_NAMES.map((rw, idx) 
       sltaSederajat: { unit: seed === 7 ? 1 : 0, peserta: seed === 7 ? 320 : 0 },
       perguruanTinggi: { unit: 0, peserta: 0 },
       pendidikanKeagamaan: { unit: 1 + (seed % 2), peserta: 30 + (seed * 5) },
-      kursusPelatihan: { unit: seed % 3 === 0 ? 1 : 0, peserta: seed % 3 === 0 ? 12 : 0 },
+      kursusBahasa: { unit: 0, peserta: 0 },
+      kursusMontir: { unit: 0, peserta: 0 },
+      kursusKomputer: { unit: 0, peserta: 0 },
+      kursusKecantikan: { unit: 0, peserta: 0 },
+      kursusRiasPengantin: { unit: 0, peserta: 0 },
+      kursusLas: { unit: 0, peserta: 0 },
     },
 
     kesehatan: {

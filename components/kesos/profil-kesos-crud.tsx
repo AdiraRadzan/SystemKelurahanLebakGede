@@ -15,7 +15,6 @@ import {
   HeartPulse,
   Landmark,
   Save,
-  RotateCcw,
   CheckCircle2,
   AlertTriangle,
   Info,
@@ -29,11 +28,9 @@ import {
   HeartHandshake,
 } from 'lucide-react';
 import { RW_OPTIONS } from '@/config/modules';
-import { triggerOfficialProfilExcelDownload } from '@/lib/download-profil-excel';
-import { Download } from 'lucide-react';
 
 export function ProfilKesosCrudView() {
-  const { getProfilKesosList, getProfilEkbangList, updateProfilKesosByRw, getProfilKesosByRw, resetProfilKesos } =
+  const { getProfilKesosList, getProfilEkbangList, updateProfilKesosByRw, getProfilKesosByRw } =
     useKelurahanStore();
 
   const [selectedRw, setSelectedRw] = useState<string>('RW 01');
@@ -122,18 +119,6 @@ export function ProfilKesosCrudView() {
     );
   };
 
-  const handleResetDefault = () => {
-    if (confirm('Kembalikan data profil seluruh RW ke data standar resmi Kelurahan?')) {
-      resetProfilKesos();
-      const rwData = getProfilKesosByRw(selectedRw);
-      if (rwData) {
-        setFormData(JSON.parse(JSON.stringify(rwData)));
-      }
-      setIsSaved(true);
-      toast.info('Data Direset', 'Seluruh data profil kesos dikembalikan ke data awal.');
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* 1. Header Banner */}
@@ -158,23 +143,6 @@ export function ProfilKesosCrudView() {
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2.5 self-start md:self-center">
-          <Button
-            onClick={() => triggerOfficialProfilExcelDownload(selectedRw, allRwList, getProfilEkbangList())}
-            className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs h-10 px-3.5 border border-emerald-400 shadow-sm"
-            title="Unduh file Excel resmi dengan Sheet PROFIL 509 baris dan cover MODEL E"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Unduh Excel {selectedRw}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleResetDefault}
-            className="border-white/30 text-white hover:bg-white/10 hover:text-white text-xs h-10 px-3.5"
-            title="Kembalikan ke data awal"
-          >
-            <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-            Reset Standar
-          </Button>
           <Button
             onClick={handleSave}
             disabled={isSaved}
@@ -455,7 +423,12 @@ export function ProfilKesosCrudView() {
                   { key: 'sltaSederajat', label: 'SLTA / SMA / SMK / MA', desc: 'Sekolah Menengah Atas' },
                   { key: 'perguruanTinggi', label: 'Perguruan Tinggi / Akademi', desc: 'Kampus / Akademi' },
                   { key: 'pendidikanKeagamaan', label: 'Pendidikan Keagamaan', desc: 'Pesantren / Diniyah' },
-                  { key: 'kursusPelatihan', label: 'Lembaga Kursus & Pelatihan', desc: 'Pelatihan Kerja / Keterampilan' },
+                  { key: 'kursusBahasa', label: 'Kursus Bahasa', desc: 'Jumlah Staf Pengajar' },
+                  { key: 'kursusMontir', label: 'Kursus Montir', desc: 'Jumlah Staf Pengajar' },
+                  { key: 'kursusKomputer', label: 'Kursus Komputer', desc: 'Jumlah Staf Pengajar' },
+                  { key: 'kursusKecantikan', label: 'Kursus Kecantikan', desc: 'Jumlah Staf Pengajar' },
+                  { key: 'kursusRiasPengantin', label: 'Kursus Rias Pengantin', desc: 'Jumlah Staf Pengajar' },
+                  { key: 'kursusLas', label: 'Kursus Las', desc: 'Jumlah Staf Pengajar' },
                 ].map(({ key, label, desc }) => {
                   const item = formData.kelembagaan[key as keyof ProfilKelembagaanKesosRw] as any;
                   return (

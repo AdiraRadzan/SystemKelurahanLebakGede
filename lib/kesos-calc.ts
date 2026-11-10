@@ -31,7 +31,12 @@ export function createEmptyProfilKesos(rw: string): ProfilKesosRwData {
       sltaSederajat: { unit: 0, peserta: 0 },
       perguruanTinggi: { unit: 0, peserta: 0 },
       pendidikanKeagamaan: { unit: 0, peserta: 0 },
-      kursusPelatihan: { unit: 0, peserta: 0 },
+      kursusBahasa: { unit: 0, peserta: 0 },
+      kursusMontir: { unit: 0, peserta: 0 },
+      kursusKomputer: { unit: 0, peserta: 0 },
+      kursusKecantikan: { unit: 0, peserta: 0 },
+      kursusRiasPengantin: { unit: 0, peserta: 0 },
+      kursusLas: { unit: 0, peserta: 0 },
     },
 
     kesehatan: {
@@ -102,7 +107,12 @@ export function aggregateProfilKesos(items: ProfilKesosRwData[]): ProfilKesosAgg
       sltaSederajat: { unit: 0, peserta: 0 },
       perguruanTinggi: { unit: 0, peserta: 0 },
       pendidikanKeagamaan: { unit: 0, peserta: 0 },
-      kursusPelatihan: { unit: 0, peserta: 0 },
+      kursusBahasa: { unit: 0, peserta: 0 },
+      kursusMontir: { unit: 0, peserta: 0 },
+      kursusKomputer: { unit: 0, peserta: 0 },
+      kursusKecantikan: { unit: 0, peserta: 0 },
+      kursusRiasPengantin: { unit: 0, peserta: 0 },
+      kursusLas: { unit: 0, peserta: 0 },
     },
     kesehatan: {
       rumahSakitUmum: 0,
@@ -181,8 +191,18 @@ export function aggregateProfilKesos(items: ProfilKesosRwData[]): ProfilKesosAgg
     result.kelembagaan.perguruanTinggi.peserta = (result.kelembagaan.perguruanTinggi.peserta || 0) + (k.perguruanTinggi?.peserta || 0);
     result.kelembagaan.pendidikanKeagamaan.unit += k.pendidikanKeagamaan?.unit || 0;
     result.kelembagaan.pendidikanKeagamaan.peserta = (result.kelembagaan.pendidikanKeagamaan.peserta || 0) + (k.pendidikanKeagamaan?.peserta || 0);
-    result.kelembagaan.kursusPelatihan.unit += k.kursusPelatihan?.unit || 0;
-    result.kelembagaan.kursusPelatihan.peserta = (result.kelembagaan.kursusPelatihan.peserta || 0) + (k.kursusPelatihan?.peserta || 0);
+    result.kelembagaan.kursusBahasa.unit += k.kursusBahasa?.unit || 0;
+    result.kelembagaan.kursusBahasa.peserta = (result.kelembagaan.kursusBahasa.peserta || 0) + (k.kursusBahasa?.peserta || 0);
+    result.kelembagaan.kursusMontir.unit += k.kursusMontir?.unit || 0;
+    result.kelembagaan.kursusMontir.peserta = (result.kelembagaan.kursusMontir.peserta || 0) + (k.kursusMontir?.peserta || 0);
+    result.kelembagaan.kursusKomputer.unit += k.kursusKomputer?.unit || 0;
+    result.kelembagaan.kursusKomputer.peserta = (result.kelembagaan.kursusKomputer.peserta || 0) + (k.kursusKomputer?.peserta || 0);
+    result.kelembagaan.kursusKecantikan.unit += k.kursusKecantikan?.unit || 0;
+    result.kelembagaan.kursusKecantikan.peserta = (result.kelembagaan.kursusKecantikan.peserta || 0) + (k.kursusKecantikan?.peserta || 0);
+    result.kelembagaan.kursusRiasPengantin.unit += k.kursusRiasPengantin?.unit || 0;
+    result.kelembagaan.kursusRiasPengantin.peserta = (result.kelembagaan.kursusRiasPengantin.peserta || 0) + (k.kursusRiasPengantin?.peserta || 0);
+    result.kelembagaan.kursusLas.unit += k.kursusLas?.unit || 0;
+    result.kelembagaan.kursusLas.peserta = (result.kelembagaan.kursusLas.peserta || 0) + (k.kursusLas?.peserta || 0);
 
     // Fasilitas Kesehatan
     result.kesehatan.rumahSakitUmum += kes.rumahSakitUmum || 0;
@@ -273,7 +293,12 @@ export function generateProfilKesosCsv(
     `5,SLTA / SMA / SMK / MA,${k.sltaSederajat.unit} Unit,${k.sltaSederajat.peserta || 0} Siswa`,
     `6,Perguruan Tinggi / Akademi,${k.perguruanTinggi.unit} Unit,${k.perguruanTinggi.peserta || 0} Mahasiswa`,
     `7,Pendidikan Keagamaan / Pesantren,${k.pendidikanKeagamaan.unit} Unit,${k.pendidikanKeagamaan.peserta || 0} Santri`,
-    `8,Lembaga Kursus & Pelatihan,${k.kursusPelatihan.unit} Unit,${k.kursusPelatihan.peserta || 0} Peserta`,
+    `8,Kursus Bahasa,${k.kursusBahasa?.unit || 0} Unit,${k.kursusBahasa?.peserta || 0} Pengajar`,
+    `9,Kursus Montir,${k.kursusMontir?.unit || 0} Unit,${k.kursusMontir?.peserta || 0} Pengajar`,
+    `10,Kursus Komputer,${k.kursusKomputer?.unit || 0} Unit,${k.kursusKomputer?.peserta || 0} Pengajar`,
+    `11,Kursus Kecantikan,${k.kursusKecantikan?.unit || 0} Unit,${k.kursusKecantikan?.peserta || 0} Pengajar`,
+    `12,Kursus Rias Pengantin,${k.kursusRiasPengantin?.unit || 0} Unit,${k.kursusRiasPengantin?.peserta || 0} Pengajar`,
+    `13,Kursus Las,${k.kursusLas?.unit || 0} Unit,${k.kursusLas?.peserta || 0} Pengajar`,
     '',
     'III. PRASARANA FASILITAS KESEHATAN,,,',
     `1,Rumah Sakit Umum,${kes.rumahSakitUmum} Unit,-`,

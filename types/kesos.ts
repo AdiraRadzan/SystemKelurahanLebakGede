@@ -23,7 +23,12 @@ export interface ProfilKelembagaanKesosRw {
   sltaSederajat: LembagaPendidikanItem;
   perguruanTinggi: LembagaPendidikanItem;
   pendidikanKeagamaan: LembagaPendidikanItem; // Pesantren / Madrasah Diniyah
-  kursusPelatihan: LembagaPendidikanItem; // Pelatihan Kerja / Keterampilan
+  kursusBahasa: LembagaPendidikanItem; // Kursus Bahasa
+  kursusMontir: LembagaPendidikanItem; // Kursus Montir
+  kursusKomputer: LembagaPendidikanItem; // Kursus Komputer
+  kursusKecantikan: LembagaPendidikanItem; // Kursus Kecantikan
+  kursusRiasPengantin: LembagaPendidikanItem; // Kursus Rias Pengantin
+  kursusLas: LembagaPendidikanItem; // Kursus Las
 }
 
 export interface ProfilKesehatanPmksRw {
