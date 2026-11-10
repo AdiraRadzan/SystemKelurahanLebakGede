@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { UserRole, User } from '@/types';
 import { ROLE_NAVIGATION } from '@/config/navigation';
+import { aggregateProfilKesos } from '@/lib/kesos-calc';
 import { useKelurahanStore } from '@/lib/store';
 import { formatIndonesianDate, getTimeGreeting } from '@/lib/utils';
 import { IconRenderer } from '@/components/ui/icon-renderer';
@@ -32,7 +33,7 @@ interface SectionBerandaViewProps {
 }
 
 export function SectionBerandaView({ user, role }: SectionBerandaViewProps) {
-  const { data } = useKelurahanStore();
+  const { data, getProfilKesosList } = useKelurahanStore();
 
   const menuGroups = ROLE_NAVIGATION[role] || [];
   const allSubModules = menuGroups.flatMap((group) =>
@@ -74,13 +75,15 @@ export function SectionBerandaView({ user, role }: SectionBerandaViewProps) {
       { name: 'Buruan SAE', total: 85 },
     ];
   } else if (role === 'kesos') {
-    chartTitle = 'Pemantauan Sasaran Gizi & Kesehatan';
+    const aggKesos = aggregateProfilKesos(getProfilKesosList());
+    chartTitle = 'Pemantauan Sasaran Gizi & Kesehatan (16 RW)';
     chartData = [
-      { name: 'Balita Normal', total: 32 },
-      { name: 'Gizi Kurang', total: 4 },
-      { name: 'Baduta 1000 HPK', total: 18 },
-      { name: 'Ibu Hamil', total: 12 },
-      { name: 'Lansia Posbindu', total: 45 },
+      { name: 'Balita Normal', total: aggKesos.kesehatan.balitaGiziBaik },
+      { name: 'Gizi Kurang', total: aggKesos.kesehatan.balitaGiziKurang },
+      { name: 'Stunting', total: aggKesos.kesehatan.balitaStunting },
+      { name: 'Baduta 1000 HPK', total: aggKesos.kesehatan.badutaTotal },
+      { name: 'Ibu Hamil', total: aggKesos.kesehatan.ibuHamilTotal },
+      { name: 'Lansia Posbindu', total: aggKesos.kesehatan.lansiaTotal },
     ];
   } else {
     // Sekel
@@ -255,7 +258,7 @@ export function SectionBerandaView({ user, role }: SectionBerandaViewProps) {
               Wilayah Kerja
             </span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="text-3xl font-extrabold text-[#0F172A]">5 RW</span>
+              <span className="text-3xl font-extrabold text-[#0F172A]">16 RW</span>
               <span className="text-xs font-semibold text-[#475569] bg-[#F1F5F9] px-2 py-0.5 rounded-full">
                 48 RT
               </span>

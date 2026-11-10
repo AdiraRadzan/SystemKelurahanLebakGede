@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useKelurahanStore } from '@/lib/store';
+import { aggregateProfilKesos } from '@/lib/kesos-calc';
+import { triggerOfficialProfilExcelDownload } from '@/lib/download-profil-excel';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast';
 import {
@@ -31,7 +33,8 @@ import {
 } from 'recharts';
 
 export default function LurahLaporanPage() {
-  const { data } = useKelurahanStore();
+  const { data, getProfilKesosList, getProfilEkbangList } = useKelurahanStore();
+  const aggKesos = aggregateProfilKesos(getProfilKesosList());
   const [activeTab, setActiveTab] = useState<'sekel' | 'pem' | 'ekbang' | 'kesos'>('sekel');
 
   const handleDownload = (format: 'PDF' | 'Excel') => {
@@ -77,16 +80,16 @@ export default function LurahLaporanPage() {
     { name: 'Rutilahu RW 04', progres: 40 },
   ];
 
-  // 4. Data Kesos
-  const balitaCount = (data['kesos_balita'] || []).length;
-  const badutaCount = (data['kesos_baduta'] || []).length;
-  const ibuHamilCount = (data['kesos_ibu-hamil'] || []).length;
-  const lansiaCount = (data['kesos_lansia'] || []).length;
+  // 4. Data Kesos (Rekapitulasi 16 RW Lebakgede)
+  const balitaCount = aggKesos.kesehatan.balitaDitimbang;
+  const badutaCount = aggKesos.kesehatan.badutaTotal;
+  const ibuHamilCount = aggKesos.kesehatan.ibuHamilTotal;
+  const lansiaCount = aggKesos.kesehatan.lansiaTotal;
   const chartKesos = [
-    { name: 'Balita (0-59 Bln)', jumlah: balitaCount, color: '#2563EB' },
-    { name: 'Baduta (0-23 Bln)', jumlah: badutaCount, color: '#38BDF8' },
+    { name: 'Balita Ditimbang', jumlah: balitaCount, color: '#2563EB' },
+    { name: 'Baduta 1000 HPK', jumlah: badutaCount, color: '#38BDF8' },
     { name: 'Ibu Hamil', jumlah: ibuHamilCount, color: '#F43F5E' },
-    { name: 'Lansia Terdata', jumlah: lansiaCount, color: '#10B981' },
+    { name: 'Lansia Posbindu', jumlah: lansiaCount, color: '#10B981' },
   ];
 
   return (
@@ -117,11 +120,12 @@ export default function LurahLaporanPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => handleDownload('Excel')}
-            className="border-[#CBD5E1] text-[#1E3A8A]"
+            onClick={() => triggerOfficialProfilExcelDownload('ALL', getProfilKesosList(), getProfilEkbangList())}
+            className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold"
+            title="Unduh Excel Resmi 16 RW (Sheet PROFIL 509 baris standar pemerintah)"
           >
-            <FileSpreadsheet className="w-4 h-4 mr-1.5" />
-            Unduh Excel
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-600" />
+            Unduh Excel Profil Resmi
           </Button>
           <Button
             variant="primary"
@@ -330,7 +334,7 @@ export default function LurahLaporanPage() {
             <div className="bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-xs">
               <span className="text-xs font-semibold text-[#64748B] uppercase">Balita (0-59 Bln)</span>
               <p className="text-3xl font-extrabold text-[#0F172A] mt-2">{balitaCount} Anak</p>
-              <p className="text-xs text-[#64748B] mt-1">Posyandu RW 01 - RW 05</p>
+              <p className="text-xs text-[#64748B] mt-1">Total Seluruh 16 RW</p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-xs">
               <span className="text-xs font-semibold text-[#64748B] uppercase">Baduta (0-23 Bln)</span>

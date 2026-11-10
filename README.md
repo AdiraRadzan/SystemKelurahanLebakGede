@@ -169,3 +169,21 @@ Panduan lengkap: `apps-script/DEPLOY.md`.
 Kelurahan Lebakgede terdiri atas **16 RW** (RW 01–RW 16). Wilayah **Sekeloa**
 berada di RW 16. Daftar RW/RT ada di `config/modules/index.ts`
 (`RW_OPTIONS`, `RT_OPTIONS`).
+
+---
+
+### 6. Modul Profil Wilayah Kesos (Kesejahteraan Sosial & Kesehatan)
+
+Modul **Profil Wilayah Kesos** (`/kesos/profil-kesos`) dan **Profil Kesos Kelurahan** (`/lurah/profil-kesos`) menyediakan sistem komprehensif pendataan dan rekapitulasi data sosial kewilayahan berbasis 16 RW:
+- **Kelembagaan & Pendidikan**: Karang Taruna, Posyandu, Pengajian, Arisan, Relawan Bencana, PKK/Dasawisma, serta sarana pendidikan (PAUD/TKQ hingga Pesantren dan Lembaga Kursus).
+- **Kesehatan & PMKS / Stunting**: Fasilitas kesehatan (RS, Puskesmas, Pustu, Klinik, Apotik, Posyandu), sasaran 1000 HPK (Balita normal/gizi kurang/stunting, baduta, ibu hamil resti, lansia), data disabilitas (tuna rungu/wicara/netra/daksa, mental), serta bansos (PKH, BPNT, PBI JKN).
+- **Sosial Budaya & Olahraga**: Prasarana peribadatan (Masjid, Mushola, Gereja, Vihara, Pura) dan fasilitas olahraga lingkungan.
+
+---
+
+### 7. Ekspor Excel Resmi Format Standar Pemerintah (Sheet PROFIL 509 Baris)
+
+Sistem kini dilengkapi generator ekspor Excel (`.xlsx`) berstandar resmi Pemerintah Kota Bandung yang mereplikasi persis lembar kerja pada `MASTER DATA PENDUDUK.xls`:
+- **Sheet 1 (`MODEL E`)**: Lembar cover resmi profil kewilayahan (RW, Kelurahan, Kecamatan, Kota, Tahun, dan pengesahan tanda tangan).
+- **Sheet 2 (`PROFIL`)**: Formulir induk profil 509 baris lengkap dengan seluruh kategori (Kelembagaan, Lembaga Pendidikan, Kelembagaan Ekonomi, Sumber Daya Alam & Orbitas, SDM & Disabilitas, serta Prasarana Kesehatan, Peribadatan, Olahraga, dan Transportasi).
+- **Endpoint API**: `/api/export-profil?rw=ALL` atau `/api/export-profil?rw=RW+XX` (tersedia tombol unduh di Beranda Lurah, Profil Ekbang, dan Profil Kesos).

@@ -42,6 +42,12 @@ export const ROLE_NAVIGATION: Record<UserRole, MenuGroup[]> = {
           description: 'Rekap umur, agama, pendidikan & mata pencaharian format Kota Bandung',
         },
         {
+          title: 'Profil Kesos Kelurahan',
+          href: '/lurah/profil-kesos',
+          iconName: 'HeartHandshake',
+          description: 'Rekapitulasi otomatis profil Kelembagaan, Stunting, PMKS & Sarana Sosial 16 RW serta Unduh Excel',
+        },
+        {
           title: 'Profil Ekbang Kelurahan',
           href: '/lurah/profil-ekbang',
           iconName: 'FileSpreadsheet',
@@ -417,6 +423,17 @@ export const ROLE_NAVIGATION: Record<UserRole, MenuGroup[]> = {
           href: '/kesos/lansia',
           iconName: 'Shield',
           description: 'Warga lanjut usia, posbindu, dan bantuan jaminan sosial',
+        },
+      ],
+    },
+    {
+      groupName: 'PROFIL KEWILAYAHAN',
+      items: [
+        {
+          title: 'Profil Wilayah Kesos',
+          href: '/kesos/profil-kesos',
+          iconName: 'HeartPulse',
+          description: 'Input dan pemutakhiran data Kelembagaan, Sarana Pendidikan & Kesehatan, Stunting, dan PMKS per RW',
         },
       ],
     },

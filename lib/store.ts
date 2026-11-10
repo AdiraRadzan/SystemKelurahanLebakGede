@@ -34,6 +34,8 @@ import {
 } from '@/data/mock-data';
 import { ProfilEkbangRwData } from '@/types/ekbang';
 import { MOCK_PROFIL_EKBANG_RW } from '@/data/mock-ekbang-profil';
+import { ProfilKesosRwData } from '@/types/kesos';
+import { MOCK_PROFIL_KESOS_RW } from '@/data/mock-kesos-profil';
 
 export const INITIAL_DATA_MAP: Record<string, any[]> = {
   // Programs and Activities (scoped or shared)
@@ -87,6 +89,7 @@ export const INITIAL_DATA_MAP: Record<string, any[]> = {
 interface KelurahanStore {
   data: Record<string, any[]>;
   profilEkbang: ProfilEkbangRwData[];
+  profilKesos: ProfilKesosRwData[];
 
   // Generic Module Items
   getItems: (key: string) => any[];
@@ -105,6 +108,11 @@ interface KelurahanStore {
   getProfilEkbangByRw: (rw: string) => ProfilEkbangRwData | undefined;
   updateProfilEkbangByRw: (rw: string, updatedFields: Partial<ProfilEkbangRwData>) => void;
   resetProfilEkbang: () => void;
+  // Profil Kesos (CRUD & Read)
+  getProfilKesosList: () => ProfilKesosRwData[];
+  getProfilKesosByRw: (rw: string) => ProfilKesosRwData | undefined;
+  updateProfilKesosByRw: (rw: string, updatedFields: Partial<ProfilKesosRwData>) => void;
+  resetProfilKesos: () => void;
 }
 
 export const useKelurahanStore = create<KelurahanStore>()(
@@ -112,6 +120,7 @@ export const useKelurahanStore = create<KelurahanStore>()(
     (set, get) => ({
       data: INITIAL_DATA_MAP,
       profilEkbang: MOCK_PROFIL_EKBANG_RW,
+      profilKesos: MOCK_PROFIL_KESOS_RW,
 
       getItems: (key: string) => {
         const state = get();
@@ -256,6 +265,57 @@ export const useKelurahanStore = create<KelurahanStore>()(
 
       resetProfilEkbang: () => {
         set({ profilEkbang: MOCK_PROFIL_EKBANG_RW });
+      },
+
+      // Profil Kesos Implementations
+      getProfilKesosList: () => {
+        const state = get();
+        if (!state.profilKesos || state.profilKesos.length === 0) {
+          return MOCK_PROFIL_KESOS_RW;
+        }
+        return state.profilKesos;
+      },
+
+      getProfilKesosByRw: (rw: string) => {
+        const list = get().getProfilKesosList();
+        return list.find((item) => item.rw.toLowerCase() === rw.toLowerCase());
+      },
+
+      updateProfilKesosByRw: (rw: string, updatedFields: Partial<ProfilKesosRwData>) => {
+        set((state) => {
+          const currentList = state.profilKesos && state.profilKesos.length > 0
+            ? state.profilKesos
+            : MOCK_PROFIL_KESOS_RW;
+
+          const updated = currentList.map((item) => {
+            if (item.rw.toLowerCase() === rw.toLowerCase()) {
+              return {
+                ...item,
+                ...updatedFields,
+                kelembagaan: {
+                  ...item.kelembagaan,
+                  ...(updatedFields.kelembagaan || {}),
+                },
+                kesehatan: {
+                  ...item.kesehatan,
+                  ...(updatedFields.kesehatan || {}),
+                },
+                sosialBudaya: {
+                  ...item.sosialBudaya,
+                  ...(updatedFields.sosialBudaya || {}),
+                },
+                terakhirDiperbarui: new Date().toISOString().slice(0, 10),
+              };
+            }
+            return item;
+          });
+
+          return { profilKesos: updated };
+        });
+      },
+
+      resetProfilKesos: () => {
+        set({ profilKesos: MOCK_PROFIL_KESOS_RW });
       },
     }),
     {

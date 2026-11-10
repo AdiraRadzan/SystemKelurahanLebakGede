@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useKelurahanStore } from '@/lib/store';
 import { aggregateProfilEkbang, generateProfilEkbangCsv } from '@/lib/ekbang-calc';
+import { triggerOfficialProfilExcelDownload } from '@/lib/download-profil-excel';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast';
 import {
@@ -23,7 +24,7 @@ import {
 import { RW_OPTIONS } from '@/config/modules';
 
 export function ProfilEkbangLurahView() {
-  const { getProfilEkbangList } = useKelurahanStore();
+  const { getProfilEkbangList, getProfilKesosList } = useKelurahanStore();
   const allRwList = getProfilEkbangList();
 
   const [selectedFilter, setSelectedFilter] = useState<string>('ALL');
@@ -90,13 +91,22 @@ export function ProfilEkbangLurahView() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              onClick={() => triggerOfficialProfilExcelDownload(selectedFilter, getProfilKesosList(), allRwList)}
+              className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold shadow-md flex items-center gap-2 px-5 py-2.5 h-auto text-sm border border-emerald-400"
+              title="Unduh file Excel resmi dengan Sheet PROFIL 509 baris dan cover MODEL E standar pemerintah"
+            >
+              <Download className="w-4 h-4" />
+              <span>Unduh Excel Resmi (Standar Pemerintah)</span>
+            </Button>
             <Button
               onClick={handleExport}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md flex items-center gap-2 px-6 py-3 h-auto text-base"
+              variant="outline"
+              className="border-white/30 text-white hover:bg-white/10 hover:text-white px-4 py-2.5 h-auto text-sm"
+              title="Unduh ringkasan format CSV"
             >
-              <Download className="w-5 h-5" />
-              <span>Unduh Profil Ekbang (Excel)</span>
+              CSV Ringkas
             </Button>
           </div>
         </div>
